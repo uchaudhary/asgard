@@ -7,6 +7,8 @@
 
 brew install gcc pkg-config asciidoctor bison
 
+brew link gcc
+
 git clone https://git.tuxfamily.org/chrony/chrony.git chrony
 cd chrony
 
