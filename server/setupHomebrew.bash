@@ -2,6 +2,7 @@
 
 # Install Homebrew
 # Instructions from brew.sh
+# Run `source ~/.profile` to enable brew
 
 sudo apt update
 sudo apt upgrade -y
