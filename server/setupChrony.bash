@@ -9,9 +9,9 @@ brew install gcc pkg-config wget
 
 brew link gcc
 
-wget -O chrony.tar.gz https://download.tuxfamily.org/chrony/chrony-4.3.tar.gz
-tar -xzf chrony.tar.gz
-cd chrony
+wget -O https://download.tuxfamily.org/chrony/chrony-4.3.tar.gz
+tar -xzf chrony-4.3.tar.gz
+cd chrony-4.3
 
 # Installed to /usr/local
 ./configure
