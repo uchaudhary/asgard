@@ -5,11 +5,12 @@
 # This installation requires that Homebrew is installed
 # Run `./setupHomebrew.bash && source ~/.profile` prior to executing this script
 
-brew install gcc pkg-config asciidoctor bison
+brew install gcc pkg-config wget
 
 brew link gcc
 
-git clone https://git.tuxfamily.org/chrony/chrony.git chrony
+wget -O chrony.tar.gz https://download.tuxfamily.org/chrony/chrony-4.3.tar.gz
+tar -xzf chrony.tar.gz
 cd chrony
 
 # Installed to /usr/local
