@@ -18,8 +18,6 @@ sudo apt update
 sudo apt upgrade -y
 sudo apt autoremove --purge -y
 
-sudo systemctl disable --now systemd-resolved
-
 sudo apt-get install dnsmasq dnsutils ldnsutils -y
 
 # Configure dnsmasq
@@ -48,6 +46,8 @@ log-dhcp""" | sudo tee /etc/dnsmasq.conf
 sudo ufw allow from "${subnet}0/24" to any port 53
 sudo ufw allow from "${subnet}0/24" to any port 67
 sudo ufw allow from "${subnet}0/24" proto udp to any port 68
+
+sudo systemctl disable --now systemd-resolved
 
 sudo systemctl restart dnsmasq
 sudo systemctl status dnsmasq
