@@ -1,0 +1,179 @@
+---
+  - name: "Setup Avahi"
+    hosts: localhost
+    connection: local
+    become: yes
+    become_user: root
+
+    tasks:
+    - name: "Check Updates"
+      apt:
+        upgrade: yes
+        update_cache: yes
+      
+    - name: "Purge"
+      apt:
+        autoremove: yes
+        purge: yes
+
+    - name: "Ensure Avahi Is Installed"
+      apt: name={{item}} state=present
+      with_items:
+        - avahi-daemon
+
+    - name: "Update Avahi Config"
+      template:
+        src: avahi-daemon.conf.j2
+        dest: /etc/avahi/avahi-daemon.conf
+        owner: root
+        group: root
+        mode: 0644
+      notify:
+        - restart avahi-daemon
+
+    - name: "Ensure Avahi Is Running"
+      service: name=avahi-daemon state=started enabled=yes
+
+  - name: "Dnsmasq Setup"
+    hosts: localhost
+    connection: local
+    become: yes
+    become_user: true
+    vars:
+      subnet: 192.168.102
+
+    tasks:
+    - name: "Dnsmasq Utils"
+      apt:
+        autoremove: yes
+        purge: yes
+
+    - name: "Check Updates"
+      apt:
+        upgrade: yes
+        update_cache: yes
+      
+    - name: "Purge"
+      apt:
+        autoremove: yes
+        purge: yes
+
+    - name: "Remove DNS Items"
+      apt:
+        name: "{{item}}"
+        state: absent
+      with_items:
+        - dnsmasq
+        - dnsutils
+        - ldnsutils
+
+    - name: "Ensure DNS Is Installed"
+      apt: name={{item}}
+      state: present
+      with_items:
+        - dnsmasq
+        - dnsutils
+        - ldnsutils
+
+    - name: "Copy Resolv"
+      copy: src=/etc/resolv.conf  dest=/etc/resolv.conf.backup
+
+    - name: "Copy Host"
+      copy: src=/etc/host.conf  dest=/etc/host.conf.backup
+
+    - name: "Copy Dnsmasq"
+      copy: src=/etc/dnsmasq.conf dest=/etc/dnsmasq.conf.backup
+
+    - name: "Allow UFW"
+      ufw:
+        rule: allow
+        src: {{subnet}}.0/24
+
+    - name: "Stop And Disable"
+      systemd:
+        name: systemd-resolved
+        state: stopped
+        enabled: no
+    
+    - name: "Restart And Status Dnsmasq"
+      ansible.builtin.systemd:
+        name: dnsmasq
+        state: restarted
+
+    - name: "Get Service Facts"
+      service_facts:
+
+    - name: "Dnsmasq Status Check"
+      debug:
+        var: ansible_facts.services["dnsmasq"]
+
+  - name: "NFS Setup"
+    hosts: localhost
+    connection: local
+    become: yes
+    become_user: root
+    vars:
+      folderPath: /mnt/asgard
+
+    tasks:
+    - name: "Remove NFS"
+      apt:
+        purge: yes
+
+    - name: "Remove NFS Items"
+      apt:
+        name: nfs-kernel-server
+        state: absent
+
+    - name: "Check Updates"
+      apt:
+        upgrade: yes
+        update_cache: yes
+      
+    - name: "Purge"
+      apt:
+        autoremove: yes
+        purge: yes
+
+    - name: "Ensure NFS Is Installed"
+      apt: name=nfs-kernel-server
+      state: present
+
+    - name: "Setup Shared Folder"
+      ansible.builtin.file:
+        path: {{ folderPath }}
+        state: absent
+
+    - name: "Create Directory"
+      ansible.builtin.file:
+        path: {{ folderPath }}
+        state: directory
+        owner: nobody
+        group: nogroup
+        mode: '777'
+        recurse: yes
+
+    - name: "Copy Exports"
+      copy: src=/etc/exports dest=/etc/exports.backupd
+
+    - name: "Echo"
+      shell: echo "{{ folderPath }} {{subnet}}/24(rw,sync,no_subtree_check)"
+      register: myecho_output
+      copy:
+        content: "{{ myecho_output }}"
+        dest: "/etc/exports"
+    
+    - name: "Restart And Status NFS"
+      ansible.builtin.systemd:
+        name: nfs-kernel-server
+        state: restarted
+
+    - name: "Get Service Facts NFS"
+      service_facts:
+
+    - name: "NFS Status Check"
+      debug:
+        var: ansible_facts.services["nfs-kernel-server"]
+  
+    - name: export share
+      ansible.builtin.command: "exportfs -a"
